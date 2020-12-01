@@ -1,7 +1,7 @@
 {
-    "name": "laravel/laravel",
+    "name": "buddget/api",
     "type": "project",
-    "description": "The Laravel Framework.",
+    "description": "An API for buddget app.",
     "keywords": [
         "framework",
         "laravel"

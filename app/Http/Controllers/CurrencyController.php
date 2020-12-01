@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class ArticleController extends Controller
+class CurrencyController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -13,9 +13,7 @@ class ArticleController extends Controller
      */
     public function index()
     {
-        $response = ['message' => 'article index'];
-        return response($response, 200);
-
+        //
     }
 
     /**
@@ -70,9 +68,7 @@ class ArticleController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $response = ['message' => 'update function'];
-        return response($response, 200);
-
+        //
     }
 
     /**
