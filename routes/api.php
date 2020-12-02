@@ -24,10 +24,13 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
     Route::post('/register','Auth\ApiAuthController@register')->name('register.api');
     Route::post('/logout', 'Auth\ApiAuthController@logout')->name('logout.api');
 
-    // Get Requests
+    // GET Requests
     Route::get('/currencies','CurrencyController@index')->name('currency.index');
 });
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/articles', 'ArticleController@index')->middleware('api.admin')->name('articles');
+
+    // POST Requests
+    Route::post('/currencies', 'CurrencyController@store')->name('currency.index');
 });
