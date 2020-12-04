@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class Currency extends Model
 {
     protected $table = 'currencies';
-
+    protected $guarded = [];
     /**
      * _get
      * returns a collection of currencies based on the specified request parameters;
@@ -21,6 +21,8 @@ class Currency extends Model
             return $query->where('name',  'LIKE', "%{$request->name}%");
         })->when($request->acronym, function($query) use ($request) {
             return $query->where('acronym',  'LIKE', "%{$request->acronym}%");
+        })->when($request->_id, function($query) use ($request) {
+            return $query->where('id',  '=', $request->_id);
         });
     }
 

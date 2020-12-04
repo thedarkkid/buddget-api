@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Currency\CreateCurrencyRequest;
+use App\Http\Requests\Currency\UpdateCurrencyRequest;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use App\Currency;
 use App\Http\Resources\Currency\Currency as CurrencyResource;
@@ -29,7 +31,7 @@ class CurrencyController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param Request $request
+     * @param CreateCurrencyRequest $request
      * @return CurrencyResource|Response
      */
     public function store(CreateCurrencyRequest $request)
@@ -42,37 +44,22 @@ class CurrencyController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      *
-     * @param Request $request
-     * @param  int  $id
-     * @return Response
+     * @param UpdateCurrencyRequest $request
+     * @param int $id
+     * @return CurrencyResource|Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCurrencyRequest $request, $id)
     {
-        //
+        try{
+            $currency = Currency::findOrFail($id);
+            $currency->update($request->validated());
+            if($currency->save()) return new CurrencyResource($currency);
+        }catch (ModelNotFoundException $e){
+            $errors = ["Currency with ID $id not found"];
+            return response(['errors'=> $errors], 404);
+        }
     }
 
     /**

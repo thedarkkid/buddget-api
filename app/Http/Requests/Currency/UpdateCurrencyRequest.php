@@ -13,7 +13,7 @@ class UpdateCurrencyRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,8 @@ class UpdateCurrencyRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'name' => 'string',
+            'acronym' => 'string|size:3'
         ];
     }
 }

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
-class ControllerTest extends TestCase
+class ControllerTestCase extends TestCase
 {
 
     use RefreshDatabase;
@@ -30,7 +30,7 @@ class ControllerTest extends TestCase
      *
      * @return void
      */
-    private function superDump(TestResponse $response){
+    protected function superDump(TestResponse $response){
         $response->dumpHeaders();
         $response->dumpSession();
         $response->dump();
@@ -55,17 +55,6 @@ class ControllerTest extends TestCase
     private function loginTestUser(){
         $response = $this->json('POST', '/api/login', ["email" => "john@doe.com", 'password' => 'password']);
         $this->authenticatedUserBearerToken = ($response->getOriginalContent())["token"];
-    }
-
-    /**
-     * A basic test example to stop phpunit warning.
-     *
-     * @return void
-     */
-    public function testBasicTest()
-    {
-        $response = $this->get('/');
-        $response->assertStatus(200);
     }
 
     /**

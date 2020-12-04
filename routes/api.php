@@ -33,4 +33,8 @@ Route::middleware('auth:api')->group(function () {
 
     // POST Requests
     Route::post('/currencies', 'CurrencyController@store')->name('currency.index');
+
+    // PUT Requests
+    Route::put('/currencies/{id}', 'CurrencyController@update')->name('currency.update');
+
 });
