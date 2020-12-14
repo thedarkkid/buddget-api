@@ -20,7 +20,7 @@ class AdminAuth
         if (Auth::guard('api')->check() &&  (int) $type >= 1) {
             return $next($request);
         } else {
-            $message = ["message" => "Permission Denied", "user"=> Auth::user()];
+            $message = ["message" => "Permission Denied"];
             return response($message, 401);
         }
     }

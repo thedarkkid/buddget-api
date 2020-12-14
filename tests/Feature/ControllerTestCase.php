@@ -20,15 +20,16 @@ class ControllerTestCase extends TestCase
     {
         parent::setUp();
         Artisan::call("passport:install"); // Sets up laravel passport.
-//        $this->registerTestAdmin(); // Creates an admin to test the access control routes.
-//        $this->loginTestAdmin(); // Tries to login admin.
+        $this->registerTestAdmin(); // Creates an admin to test the access control routes.
+        $this->loginTestAdmin(); // Tries to login admin.
         $this->registerTestUser(); // Creates a user to test the authenticated routes.
         $this->loginTestUser(); // Tries to login user.
     }
 
     protected function tearDown(): void
     {
-        $this->logoutTestUser();
+        $this->logoutTestUser(); // Logs out test user
+        $this->logoutTestAdmin(); // Logs out test admin
         parent::tearDown();
     }
 
@@ -63,7 +64,7 @@ class ControllerTestCase extends TestCase
     private function registerTestAdmin(){
         (factory(User::class)->make([
             'email'=> 'admin@doe.com',
-            'type' => 2
+            'type' => 1
         ]))->save();
     }
 
@@ -77,6 +78,11 @@ class ControllerTestCase extends TestCase
         $this->authenticatedUserBearerToken = ($response->getOriginalContent())["token"];
     }
 
+    /**
+     * Logs out the test user and resets the authentication token.
+     *
+     * @return void
+     */
     private function logoutTestUser(){
         $token = $this->getAuthenticationToken();
         $response = $this->json('POST', '/api/logout', [], [
@@ -86,7 +92,7 @@ class ControllerTestCase extends TestCase
     }
 
     /**
-     * Logs in the test admin and sets the authentication token.
+     * Logs in a test admin and sets the authentication token.
      *
      * @return void
      */
@@ -95,6 +101,11 @@ class ControllerTestCase extends TestCase
         $this->authenticatedAdminBearerToken = ($response->getOriginalContent())["token"];
     }
 
+    /**
+     * Logs out the test admin and resets the authentication token.
+     *
+     * @return void
+     */
     private function logoutTestAdmin(){
         $token = $this->getAuthenticatedAdminToken();
         $response = $this->json('POST', '/api/logout', [], [

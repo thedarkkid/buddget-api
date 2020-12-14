@@ -6,31 +6,78 @@ use App\Currency;
 use Illuminate\Support\Facades\Artisan;
 
 
-class CurrencyControllerTest extends RESTControllerTestCase
+class RESTControllerTestCase extends ControllerTestCase
 {
+    protected $className;
+    protected $apiURI;
+
     protected function setUp(): void
     {
         parent::setUp();
-        $this->init(Currency::class, '/api/currencies'); // Initialises test case.
-        $this->seedDB();  // Seeds the DB with data.
+    }
+
+    protected function init($className, $apiURI){
+        $this->className = $className; // Sets the api classname
+        $this->apiURI = $apiURI; // Sets the api URI
     }
 
     /**
-     * Tests that the index method utilises the name property in the GET query.
+     * Generates a list of models and dumps it in the in-memory DB.
+     * A laravel 'seeder' for the class($className) has to have been created before this can work.
+     *
+     * @param int $row_amount
      *
      * @return void
      */
-    public function testIndexMethodUsesNameQueryProperty(){
-        $newCurrency = factory(Currency::class)->make([
-            'name'=> 'Algerian Naira'
-        ]);
-        $newCurrency->save();
+    protected function seedDB($row_amount = 20){
+       factory($this->className, $row_amount)->create(); // Generates models using laravel factories.
+    }
 
-        $response = $this->get('/api/currencies?name=algerian+naira');
+    /**
+     * Tests that the index method in controller class utilises the _limit field.
+     *
+     * @param null $uri
+     * @param int $limit
+     * @return void
+     */
+    public function testIndexMethodUsesRequestLimit($uri = null, $limit = 10){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $response = $this->get($uri.'?_limit='.$limit); // Get the request response.
+        $response->assertStatus(200); // Assert get request is successful.
 
-        $response->assertStatus(200);
-        $this->assertTrue(count($response->getOriginalContent()) === 1, "response does not return result utilizing name property.");
-        $response->assertJson(["data" => [$newCurrency->toArray()]]);
+        $this->assertFalse(count($response->getOriginalContent()) === ($limit+10), "response dump has length ".($limit+10)); // Assert response does not have wrong array length.
+        $this->assertTrue(count($response->getOriginalContent()) === $limit, "response dump does not have length $limit"); // Assert response has correct array length.
+    }
+
+    /**
+     * Tests that the index method in the default class ($className) utilises
+     * the default limit if the limit field is not filled.
+     *
+     * @param null $uri
+     * @param int $limit
+     * @return void
+     */
+    public function testIndexMethodUsesDefaultLimit($uri = null, $limit = 20){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $response = $this->get($uri); // Get the request response.
+        $response->assertStatus(200); // Assert get request is successful.
+        $this->assertTrue(count($response->getOriginalContent()) === $limit, "response dump does not have length $limit"); // Assert response has correct array length.
+    }
+
+    /**
+     * Tests that the index method utilises the _id property in the GET query.
+     *
+     * @param null $uri
+     * @return void
+     */
+    public function testIndexMethodUsesIdQueryProperty($uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model for use in test.
+        $response = $this->get($uri.'?_id='.$newModel->id); // Make a GET request utilizing the model id to get the model.
+
+        $response->assertStatus(200); // Assert request is successful.
+        $this->assertTrue(count($response->getOriginalContent()) === 1, "response does not return result utilizing id property.");
+        $response->assertJsonFragment($newModel->toArray()); // Assert that the newly created model was called using its id.
     }
 
     /**
@@ -39,7 +86,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testStoreMethodRequiresBearerToken(){
-        $response = $this->post('/api/currencies');
+        $response = $this->post($this->apiURI);
         $response->assertJson(["message"=>"Unauthenticated."], true);
         $response->assertStatus(401);
     }

@@ -26,10 +26,8 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
 
     // GET Requests
     Route::get('/currencies','CurrencyController@index')->name('currency.index');
-
 });
 
-//Route::delete('/currencies/{id}', 'CurrencyController@destroy')->middleware('api.admin')->name('currency.delete');
 
 
 Route::group(['middleware' => ['cors', 'json.response', 'auth:api']], function () {
@@ -42,12 +40,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'auth:api']], function (
     Route::put('/currencies/{id}', 'CurrencyController@update')->name('currency.update');
 
     // DELETE Requests
+    Route::delete('/currencies/{id}', 'CurrencyController@destroy')->middleware('api.admin')->name('currency.delete');
 
 });
 
-Route::group(['middleware' => ['api', 'cors', 'json.response', 'auth:api', 'api.admin']], function () {
-
-    // DELETE Requests
-    Route::delete('/currencies/{id}', 'CurrencyController@destroy')->name('currency.delete');
-
-});
