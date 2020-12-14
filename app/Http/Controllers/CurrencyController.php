@@ -13,7 +13,8 @@ use Illuminate\Http\Response;
 
 class CurrencyController extends Controller
 {
-    /**
+
+        /**
      * Display a listing of the resource.
      *
      * @param Request $request
@@ -70,6 +71,6 @@ class CurrencyController extends Controller
      */
     public function destroy($id)
     {
-        //
+        return response(["success"], 200);
     }
 }

@@ -11,9 +11,9 @@ class CurrencyControllerTest extends ControllerTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Artisan::call("passport:install"); // Sets up laravel passport.
         $this->seedDB();  // Seeds the DB with data.
     }
+
 
     /**
      * Generates a List of currencies.
@@ -270,5 +270,16 @@ class CurrencyControllerTest extends ControllerTestCase
         $response->assertJsonFragment(["The given data was invalid."]);
         $response->assertJsonFragment(["The acronym must be 3 characters."]);
         $response->assertStatus(422);
+    }
+
+    public function testDestroyMethodEndpointExists(){
+        $nCurrency = factory(Currency::class)->create();
+//        var_dump($this->getAuthenticationToken());
+        $token = $this->getAuthenticationToken();
+        $response = $this->delete('/api/currencies/'.$nCurrency->id, [
+            'Authorization' => "Bearer $token"
+        ]);
+        $response->dump();
+        $response->assertStatus(200);
     }
 }
