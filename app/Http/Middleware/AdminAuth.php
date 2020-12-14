@@ -16,12 +16,11 @@ class AdminAuth
      */
     public function handle($request, Closure $next)
     {
-        $type = Auth::user()->type;
-
+        $type = $request->user()->type;
         if (Auth::guard('api')->check() &&  (int) $type >= 1) {
             return $next($request);
         } else {
-            $message = ["message" => "Permission Denied"];
+            $message = ["message" => "Permission Denied", "user"=> Auth::user()];
             return response($message, 401);
         }
     }

@@ -274,9 +274,8 @@ class CurrencyControllerTest extends ControllerTestCase
 
     public function testDestroyMethodEndpointExists(){
         $nCurrency = factory(Currency::class)->create();
-//        var_dump($this->getAuthenticationToken());
         $token = $this->getAuthenticationToken();
-        $response = $this->delete('/api/currencies/'.$nCurrency->id, [
+        $response = $this->delete('/api/currencies/'.$nCurrency->id, [], [
             'Authorization' => "Bearer $token"
         ]);
         $response->dump();

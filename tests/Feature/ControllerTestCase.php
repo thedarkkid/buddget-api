@@ -28,10 +28,10 @@ class ControllerTestCase extends TestCase
 
     protected function tearDown(): void
     {
-        parent::tearDown();
         $this->logoutTestUser();
+        parent::tearDown();
     }
-    // logout users on teardown
+
     /**
      * Returns dump with headers and session.
      * @param TestResponse $response
