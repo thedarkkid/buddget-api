@@ -72,5 +72,13 @@ class CurrencyController extends Controller
     public function destroy($id)
     {
         return response(["success"], 200);
+//        try{
+//            $currency = Currency::findOrFail($id);
+//            $currency->update($request->validated());
+//            if($currency->save()) return new CurrencyResource($currency);
+//        }catch (ModelNotFoundException $e){
+//            $errors = ["Currency with ID $id not found"];
+//            return response(['errors'=> $errors], 404);
+//        }
     }
 }
