@@ -10,15 +10,17 @@ class RESTControllerTestCase extends ControllerTestCase
 {
     protected $className;
     protected $apiURI;
+    protected $modelName;
 
     protected function setUp(): void
     {
         parent::setUp();
     }
 
-    protected function init($className, $apiURI){
-        $this->className = $className; // Sets the api classname
-        $this->apiURI = $apiURI; // Sets the api URI
+    protected function init($className, $apiURI, $modelName){
+        $this->className = $className; // Sets the api classname.
+        $this->apiURI = $apiURI; // Sets the api URI.
+        $this->modelName = $modelName; // Sets the model name.
     }
 
     /**
@@ -36,11 +38,11 @@ class RESTControllerTestCase extends ControllerTestCase
     /**
      * Tests that the index method in controller class utilises the _limit field.
      *
-     * @param null $uri
+     * @param null | string $uri
      * @param int $limit
      * @return void
      */
-    public function testIndexMethodUsesRequestLimit($uri = null, $limit = 10){
+    public function testIndexMethodUsesRequestLimit($limit = 10, $uri = null){
         $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
         $response = $this->get($uri.'?_limit='.$limit); // Get the request response.
         $response->assertStatus(200); // Assert get request is successful.
@@ -53,11 +55,11 @@ class RESTControllerTestCase extends ControllerTestCase
      * Tests that the index method in the default class ($className) utilises
      * the default limit if the limit field is not filled.
      *
-     * @param null $uri
+     * @param null | string $uri
      * @param int $limit
      * @return void
      */
-    public function testIndexMethodUsesDefaultLimit($uri = null, $limit = 20){
+    public function testIndexMethodUsesDefaultLimit($limit = 20, $uri = null){
         $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
         $response = $this->get($uri); // Get the request response.
         $response->assertStatus(200); // Assert get request is successful.
@@ -67,7 +69,7 @@ class RESTControllerTestCase extends ControllerTestCase
     /**
      * Tests that the index method utilises the _id property in the GET query.
      *
-     * @param null $uri
+     * @param null | string $uri
      * @return void
      */
     public function testIndexMethodUsesIdQueryProperty($uri = null){
@@ -83,200 +85,189 @@ class RESTControllerTestCase extends ControllerTestCase
     /**
      * Test that the store method needs the user to be unauthenticated.
      *
+     * @param null | string $uri
      * @return void
      */
-    public function testStoreMethodRequiresBearerToken(){
-        $response = $this->post($this->apiURI);
-        $response->assertJson(["message"=>"Unauthenticated."], true);
-        $response->assertStatus(401);
+    public function testStoreMethodRequiresBearerToken($uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $response = $this->post($this->apiURI); // Send an empty post request to the store endpoint.
+        $response->assertStatus(401); // Assert that it returns an error 401 as determined by the middleware.
+        $response->assertJson(["message"=>"Unauthenticated."], true); // Assert that it returns an error message as determined by the middleware.
     }
 
     /**
-     * Tests that the store method stores the passed currency in the db;
+     * Tests that the store method stores the passed model in the db;
      *
+     * @param null | string $uri
      * @return void
      */
-    public function testStoreMethodStoresCurrency(){
-        $nCurrency = factory(Currency::class)->make();
-        $token = $this->getAuthenticationToken();
-        $response = $this->post('/api/currencies', $nCurrency->toArray(), [
+    public function testStoreMethodStoresModel($uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->make(); // Create a new model according to the classname.
+        $token = $this->getAuthenticationToken(); // Get authentication token from test case.
+
+        // Send the post request to store the model.
+        $response = $this->post($uri, $newModel->toArray(), [
             'Authorization' => "Bearer $token"
         ]);
-        $response->assertStatus(201);
-        $response->assertJsonFragment($nCurrency->toArray());
+
+        $response->assertStatus(201); // Assert the status of the response.
+        $response->assertJsonFragment($newModel->toArray()); // Assert that the api response contains the newly created model.
     }
 
     /**
-     * Test that the store method requires the name property.
+     * Test that the store method requires a property.
      *
+     * @param $property
+     * @param null $errorMessage
+     * @param string $uri
      * @return void
      */
-    public function testStoreMethodRequiresNameProperty(){
-        $nCurrency = factory(Currency::class)->make();
-        $token = $this->getAuthenticationToken();
-        $nCurrencyArr =  $nCurrency->toArray(); unset($nCurrencyArr["name"]);
-        $response = $this->post('/api/currencies', $nCurrencyArr , [
+    protected function storeMethodRequiresPropertyTestCase($property, $errorMessage = null, $uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->make(); // Create a new model from the pre-specified classname.
+        $token = $this->getAuthenticationToken(); // Get auth token from test case.
+        $newModel =  $newModel->toArray(); unset($newModel[$property]); // remove property from newModel created.
+
+        // Send the post request to store the model.
+        $response = $this->post($uri, $newModel , [
             'Authorization' => "Bearer $token"
         ]);
+
+        // Make assertions based on the pre-specified request.
         $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The name field is required."]);
-        $response->assertStatus(422);
-    }
-
-    /**
-     * Test that the store method requires the acronym property.
-     *
-     * @return void
-     */
-    public function testStoreMethodRequiresAcronymProperty(){
-        $nCurrency = factory(Currency::class)->make();
-        $token = $this->getAuthenticationToken();
-        $nCurrencyArr =  $nCurrency->toArray(); unset($nCurrencyArr["acronym"]);
-        $response = $this->post('/api/currencies', $nCurrencyArr , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym field is required."]);
-        $response->assertStatus(422);
-    }
-
-    /**
-     * Test that the store method does not accept an acronym property
-     * with more than three characters.
-     *
-     * @return void
-     */
-    public function testStoreMethodRequiresAcronymPropertyToBeMaxOfThreeCharacters(){
-        $nCurrency = factory(Currency::class)->make(["acronym" => "NIMMNI"]);
-        $token = $this->getAuthenticationToken();
-        $response = $this->post('/api/currencies', $nCurrency->toArray() , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym must be 3 characters."]);
-        $response->assertStatus(422);
-    }
-
-    /**
-     * Test that the store method does not accept an acronym property
-     * with less than three characters.
-     *
-     * @return void
-     */
-    public function testStoreMethodRequiresAcronymPropertyToNotBeLessThanThreeCharacters(){
-        $nCurrency = factory(Currency::class)->make(["acronym" => "NI"]);
-        $token = $this->getAuthenticationToken();
-        $response = $this->post('/api/currencies', $nCurrency->toArray() , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym must be 3 characters."]);
+        if(!is_null($errorMessage)) $response->assertJsonFragment([$errorMessage]);
         $response->assertStatus(422);
     }
 
     /**
      * Test that the update method exists.
      *
+     * @param $updateArr
+     * @param null | string $uri
      * @return void
      */
-    public function testUpdateMethodEndpointExists(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["name" => "Baghdad Nadir"] , [
+    protected function updateMethodEndpointExistsTestCase($updateArr, $uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model using the pre-specified classname.
+        $token = $this->getAuthenticationToken(); // Get auth token from test case.
+
+        // Send the put request to update the model.
+        $response = $this->put($uri.$newModel->id, $updateArr, [
             'Authorization' => "Bearer $token"
         ]);
-        $response->assertStatus(200);
+
+        $response->assertStatus(200); // Assert response status is successful.
     }
 
     /**
      * Test that the update method verifies id of the row being updated.
      *
+     * @param $updateArr
+     * @param null | string $uri
      * @return void
      */
-    public function testUpdateMethodVerifiesId(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id."1", ["name" => "Baghdad Nadir"] , [
+    public function updateMethodVerifiesIdTestCase($updateArr, $uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model and persist in db.
+        $token = $this->getAuthenticationToken(); // Get auth token from test case.
+
+        // Send the put request to update the model.
+        $response = $this->put($uri.$newModel->id."1", $updateArr, [
             'Authorization' => "Bearer $token"
         ]);
-        $response->assertJsonFragment( ["Currency with ID ".$nCurrency->id."1"." not found"]);
+
+        // Assert the error returned in the request response.
+        $response->assertJsonFragment( [$this->modelName." with ID ".$newModel->id."1"." not found"]);
         $response->assertStatus(404);
     }
 
     /**
-     * Test that the update method actually returns an updated currency
-     * object with new name.
+     * Test that the update method actually returns an updated model object with the newly specified key-value pair.
      *
+     * @param $key
+     * @param $value
+     * @param null | string $uri
      * @return void
      */
-    public function testUpdateMethodReturnsUpdatedNameInCurrency(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["name" => "Baghdad Nadir"] , [
+    protected function updateMethodReturnsUpdatedColumnInModelTestCase($key, $value, $uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model and persist in db.
+        $token = $this->getAuthenticationToken(); // Get auth token from test case.
+
+        // Send the put request to update the model.
+        $response = $this->put($uri.$newModel->id, [$key => $value] , [
             'Authorization' => "Bearer $token"
         ]);
-        $nCurrency->name = "Baghdad Nadir";
-        $response->assertJsonFragment($nCurrency->toArray());
+
+        // Assert the column was updated.
+        $newModel->{$key} = $value;
+        $response->assertJsonFragment($newModel->toArray());
         $response->assertStatus(200);
     }
 
     /**
-     * Test that the update method actually returns an updated currency
-     * object with new acronym.
+     * Tests that the key-value pair used in test case is valid.
      *
-     * @return void
+     * @param $tcKey
+     * @param $tcValue
+     * @param null | string $uri
      */
-    public function testUpdateMethodReturnsUpdatedAcronymInCurrency(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["acronym" => "BNB"] , [
+    protected function updateMethodRequiresPropertyToFitTestCase($tcKey, $tcValue, $uri=null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model with pre-specified classname.
+        $token = $this->getAuthenticationToken(); // Get auth token from test case.
+
+        // Send the put request to update the model.
+        $response = $this->put($uri.$newModel->id, [$tcKey => $tcValue] , [
             'Authorization' => "Bearer $token"
         ]);
-        $nCurrency->acronym = "BNB";
-        $response->assertJsonFragment($nCurrency->toArray());
+
+        // Assert success response.
         $response->assertStatus(200);
+        $response->assertJsonFragment($newModel->toArray());
+
     }
 
     /**
-     * Test that the update method does not accept an acronym property
-     * with more than three characters.
+     *  Tests that the key-value pair required by the test case has an invalid value.
      *
-     * @return void
+     * @param $tcKey
+     * @param $tcInvalidValue
+     * @param null | string $errorMsg
+     * @param null | string $uri
      */
-    public function testUpdateMethodRequiresAcronymPropertyToBeMaxOfThreeCharacters(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["acronym" => "BNBMI"] , [
+    protected function updateRequiresPropertyNotToFitTestCase($tcKey, $tcInvalidValue, $errorMsg = null, $uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model with pre-specified classname.
+        $token = $this->getAuthenticationToken(); // Get auth token from test case.
+
+        // Send the put request to update the model.
+        $response = $this->put($uri.$newModel->id, [$tcKey => $tcInvalidValue] , [
             'Authorization' => "Bearer $token"
         ]);
+
+        // Assert error responses.
         $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym must be 3 characters."]);
+        if(!is_null($errorMsg)) $response->assertJsonFragment([$errorMsg]);
         $response->assertStatus(422);
     }
 
-    /**
-     * Test that the update method does not accept an acronym property
-     * with less than three characters.
-     *
-     * @return void
-     */
-    public function testUpdateMethodRequiresAcronymPropertyToNotBeLessThanThreeCharacters(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["acronym" => "BI"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym must be 3 characters."]);
-        $response->assertStatus(422);
-    }
 
-    public function testDestroyMethodEndpointExists(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticatedAdminToken();
-        $response = $this->delete('/api/currencies/'.$nCurrency->id, [], [
+    /**
+     * Tests that the destroy endpoint exists.
+     * @param null $uri
+     */
+    protected function destroyMethodEndpointExistsTestCase($uri = null){
+        $uri = ($uri) ?? $this->apiURI; // Use a default URI if a uri isn't specified.
+        $newModel = factory($this->className)->create(); // Create a new model with pre-specified classname.
+        $token = $this->getAuthenticatedAdminToken(); // Get auth token from test case.
+
+        // Send the put request to update the model.
+        $response = $this->delete($uri.$newModel->id, [], [
             'Authorization' => "Bearer $token"
         ]);
-        $response->assertStatus(200);
+
+        $response->assertStatus(200); // Assert successful response.
     }
 }

@@ -11,7 +11,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->init(Currency::class, '/api/currencies'); // Initialises test case.
+        $this->init(Currency::class, '/api/currencies/', "Currency"); // Initialises test case.
         $this->seedDB();  // Seeds the DB with data.
     }
 
@@ -33,31 +33,6 @@ class CurrencyControllerTest extends RESTControllerTestCase
         $response->assertJson(["data" => [$newCurrency->toArray()]]);
     }
 
-    /**
-     * Test that the store method needs the user to be unauthenticated.
-     *
-     * @return void
-     */
-    public function testStoreMethodRequiresBearerToken(){
-        $response = $this->post('/api/currencies');
-        $response->assertJson(["message"=>"Unauthenticated."], true);
-        $response->assertStatus(401);
-    }
-
-    /**
-     * Tests that the store method stores the passed currency in the db;
-     *
-     * @return void
-     */
-    public function testStoreMethodStoresCurrency(){
-        $nCurrency = factory(Currency::class)->make();
-        $token = $this->getAuthenticationToken();
-        $response = $this->post('/api/currencies', $nCurrency->toArray(), [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertStatus(201);
-        $response->assertJsonFragment($nCurrency->toArray());
-    }
 
     /**
      * Test that the store method requires the name property.
@@ -65,15 +40,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testStoreMethodRequiresNameProperty(){
-        $nCurrency = factory(Currency::class)->make();
-        $token = $this->getAuthenticationToken();
-        $nCurrencyArr =  $nCurrency->toArray(); unset($nCurrencyArr["name"]);
-        $response = $this->post('/api/currencies', $nCurrencyArr , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The name field is required."]);
-        $response->assertStatus(422);
+        $this->storeMethodRequiresPropertyTestCase("name", "The name field is required.");
     }
 
     /**
@@ -82,15 +49,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testStoreMethodRequiresAcronymProperty(){
-        $nCurrency = factory(Currency::class)->make();
-        $token = $this->getAuthenticationToken();
-        $nCurrencyArr =  $nCurrency->toArray(); unset($nCurrencyArr["acronym"]);
-        $response = $this->post('/api/currencies', $nCurrencyArr , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym field is required."]);
-        $response->assertStatus(422);
+        $this->storeMethodRequiresPropertyTestCase("acronym", "The acronym field is required.");
     }
 
     /**
@@ -127,19 +86,16 @@ class CurrencyControllerTest extends RESTControllerTestCase
         $response->assertStatus(422);
     }
 
+
     /**
      * Test that the update method exists.
      *
      * @return void
      */
     public function testUpdateMethodEndpointExists(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["name" => "Baghdad Nadir"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertStatus(200);
+        $this->updateMethodEndpointExistsTestCase(["name" => "Baghdad Nadir"]);
     }
+
 
     /**
      * Test that the update method verifies id of the row being updated.
@@ -147,13 +103,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testUpdateMethodVerifiesId(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id."1", ["name" => "Baghdad Nadir"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment( ["Currency with ID ".$nCurrency->id."1"." not found"]);
-        $response->assertStatus(404);
+        $this->updateMethodVerifiesIdTestCase(["name" => "Baghdad Nadir"]);
     }
 
     /**
@@ -163,14 +113,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testUpdateMethodReturnsUpdatedNameInCurrency(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["name" => "Baghdad Nadir"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $nCurrency->name = "Baghdad Nadir";
-        $response->assertJsonFragment($nCurrency->toArray());
-        $response->assertStatus(200);
+        $this->updateMethodReturnsUpdatedColumnInModelTestCase("name", "Baghdad Nadir");
     }
 
     /**
@@ -180,14 +123,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testUpdateMethodReturnsUpdatedAcronymInCurrency(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["acronym" => "BNB"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $nCurrency->acronym = "BNB";
-        $response->assertJsonFragment($nCurrency->toArray());
-        $response->assertStatus(200);
+        $this->updateMethodReturnsUpdatedColumnInModelTestCase("acronym", "BNB");
     }
 
     /**
@@ -197,14 +133,7 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testUpdateMethodRequiresAcronymPropertyToBeMaxOfThreeCharacters(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["acronym" => "BNBMI"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym must be 3 characters."]);
-        $response->assertStatus(422);
+        $this->updateRequiresPropertyNotToFitTestCase("acronym", "BNBMI", "The acronym must be 3 characters.");
     }
 
     /**
@@ -214,22 +143,15 @@ class CurrencyControllerTest extends RESTControllerTestCase
      * @return void
      */
     public function testUpdateMethodRequiresAcronymPropertyToNotBeLessThanThreeCharacters(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticationToken();
-        $response = $this->put('/api/currencies/'.$nCurrency->id, ["acronym" => "BI"] , [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertJsonFragment(["The given data was invalid."]);
-        $response->assertJsonFragment(["The acronym must be 3 characters."]);
-        $response->assertStatus(422);
+        $this->updateRequiresPropertyNotToFitTestCase("acronym", "BI", "The acronym must be 3 characters.");
     }
 
+
+    /**
+     * Tests that the destroy method exists.
+     *
+     */
     public function testDestroyMethodEndpointExists(){
-        $nCurrency = factory(Currency::class)->create();
-        $token = $this->getAuthenticatedAdminToken();
-        $response = $this->delete('/api/currencies/'.$nCurrency->id, [], [
-            'Authorization' => "Bearer $token"
-        ]);
-        $response->assertStatus(200);
+        $this->destroyMethodEndpointExistsTestCase();
     }
 }
